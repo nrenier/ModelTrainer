@@ -5,6 +5,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+from config import Config
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -17,11 +18,11 @@ db = SQLAlchemy(model_class=Base)
 
 # Create the Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev_secret_key")
+app.secret_key = Config.SECRET_KEY
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///ml_pipeline.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = Config.SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -32,8 +33,10 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
 # Configure file uploads
-app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
-app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB max upload size
+app.config["UPLOAD_FOLDER"] = Config.UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = Config.MAX_CONTENT_LENGTH
+app.config["SUPPORTED_FORMATS"] = Config.SUPPORTED_FORMATS
+app.config["SUPPORTED_MODELS"] = Config.SUPPORTED_MODELS
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 # Add context processor for templates
