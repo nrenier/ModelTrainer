@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Dataset - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Upload Dataset{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Upload a New Dataset</h5>
+            </div>
+            <div class="card-body">
+                <form id="dataset-upload-form" action="{{ url_for('upload_dataset') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="dataset_name" class="form-label">Dataset Name</label>
+                        <input type="text" class="form-control" id="dataset_name" name="dataset_name" required 
+                               placeholder="Enter a descriptive name for your dataset">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dataset_format" class="form-label">Dataset Format</label>
+                        <select class="form-select" id="dataset_format" name="dataset_format" required>
+                            <option value="" selected disabled>Select dataset format...</option>
+                            {% for format in supported_formats %}
+                            <option value="{{ format }}">{{ format }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Choose the annotation format of your dataset.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Optional: Provide details about your dataset"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="dataset_file" class="form-label">Dataset File</label>
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-icon">
+                                <i data-feather="upload-cloud"></i>
+                            </div>
+                            <p class="mb-2">Drag & drop your dataset file here or click to browse</p>
+                            <p class="text-muted small mb-2">Supported formats: .zip, .tar, .gz, .json, .yaml, .yml</p>
+                            <input type="file" class="form-control d-none" id="dataset_file" name="dataset_file" required>
+                            <button type="button" class="btn btn-outline-primary" id="browse-button">
+                                Browse Files
+                            </button>
+                        </div>
+                        <div id="file-selected" class="mt-2 d-none">
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i data-feather="file" class="me-2"></i>
+                                <span id="selected-filename">No file selected</span>
+                                <button type="button" class="btn-close ms-auto" id="remove-file"></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i data-feather="info" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <div>
+                                <h6 class="alert-heading mb-1">Dataset Guidelines</h6>
+                                <ul class="mb-0 ps-3">
+                                    <li>For COCO format: Upload a ZIP file containing images and a JSON annotations file</li>
+                                    <li>For YOLO format: Upload a ZIP with images, labels, and a data.yaml file</li>
+                                    <li>For Pascal VOC format: Upload a ZIP with images and XML annotation files</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="upload" class="me-1"></i> Upload Dataset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('dataset_file');
+        const browseButton = document.getElementById('browse-button');
+        const fileSelected = document.getElementById('file-selected');
+        const selectedFilename = document.getElementById('selected-filename');
+        const removeFileButton = document.getElementById('remove-file');
+        
+        // Handle browse button click
+        browseButton.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        // Handle file selection
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                selectedFilename.textContent = fileInput.files[0].name;
+                fileSelected.classList.remove('d-none');
+                uploadArea.classList.add('border-success');
+            } else {
+                fileSelected.classList.add('d-none');
+                uploadArea.classList.remove('border-success');
+            }
+        });
+        
+        // Handle remove file button
+        removeFileButton.addEventListener('click', function() {
+            fileInput.value = '';
+            fileSelected.classList.add('d-none');
+            uploadArea.classList.remove('border-success');
+        });
+        
+        // Handle drag and drop
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                selectedFilename.textContent = fileInput.files[0].name;
+                fileSelected.classList.remove('d-none');
+                uploadArea.classList.add('border-success');
+            }
+        });
+        
+        // Handle clicks on the upload area
+        uploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+    });
+</script>
+{% endblock %}

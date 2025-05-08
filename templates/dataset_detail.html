@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dataset.name }} - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Dataset: {{ dataset.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Dataset Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>General Information</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Format</th>
+                                    <td><span class="badge bg-primary">{{ dataset.format }}</span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Classes</th>
+                                    <td>{{ dataset.num_classes }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Images</th>
+                                    <td>{{ dataset.num_images }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Created</th>
+                                    <td>{{ dataset.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Size</th>
+                                    <td>
+                                        {% if dataset.size %}
+                                            {{ (dataset.size / (1024*1024))|round(2) }} MB
+                                        {% else %}
+                                            Unknown
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Storage Path</th>
+                                    <td><code>{{ dataset.path }}</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if dataset.description %}
+                        <h6>Description</h6>
+                        <p>{{ dataset.description }}</p>
+                        {% endif %}
+                        
+                        <h6 class="mt-3">Classes</h6>
+                        <div>
+                            {% if dataset.class_names %}
+                                {% for class_name in dataset.class_names %}
+                                <span class="class-label">{{ class_name }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No class information available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('list_datasets') }}" class="btn btn-outline-secondary me-md-2">
+                        <i data-feather="arrow-left" class="me-1"></i> Back to Datasets
+                    </a>
+                    <a href="{{ url_for('configure_training', dataset_id=dataset.id) }}" class="btn btn-primary">
+                        <i data-feather="play" class="me-1"></i> Train Model with this Dataset
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Class Distribution Visualization (if available) -->
+        {% if dataset.class_names and dataset.class_names|length > 0 %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Class Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i data-feather="info" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0">
+                                Class distribution visualization will be generated during the training process.
+                                Start a training job to see detailed statistics about this dataset.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Related Training Jobs -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Related Training Jobs</h5>
+            </div>
+            <div class="card-body">
+                {% if dataset.jobs.count() > 0 %}
+                <div class="list-group list-group-flush">
+                    {% for job in dataset.jobs %}
+                    <a href="{{ url_for('view_job', job_id=job.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ job.name }}</h6>
+                            <small>
+                                <span class="badge badge-{{ job.status }}" 
+                                      data-job-id="{{ job.id }}" 
+                                      data-job-status="{{ job.status }}">
+                                    {{ job.status }}
+                                </span>
+                            </small>
+                        </div>
+                        <p class="mb-1">{{ job.model_type }}</p>
+                        <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <div class="mb-3">
+                        <i data-feather="clipboard" style="width: 32px; height: 32px;" class="text-muted"></i>
+                    </div>
+                    <p class="text-muted mb-3">No training jobs for this dataset yet.</p>
+                    <a href="{{ url_for('configure_training', dataset_id=dataset.id) }}" class="btn btn-sm btn-primary">
+                        <i data-feather="play" class="me-1"></i> Start Training
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('configure_training', dataset_id=dataset.id) }}" class="btn btn-primary mb-2">
+                        <i data-feather="play-circle" class="me-2"></i> Train New Model
+                    </a>
+                    {% if dataset.jobs.filter_by(status='completed').count() > 0 %}
+                    <a href="{{ url_for('view_results', job_id=dataset.jobs.filter_by(status='completed').first().id) }}" class="btn btn-outline-success mb-2">
+                        <i data-feather="bar-chart-2" class="me-2"></i> View Latest Results
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

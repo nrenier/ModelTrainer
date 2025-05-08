@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Training Jobs - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Training Jobs{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">All Training Jobs</h5>
+            <a href="{{ url_for('list_datasets') }}" class="btn btn-primary btn-sm">
+                <i data-feather="plus" class="me-1"></i> New Training Job
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if jobs %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Model Type</th>
+                        <th>Dataset</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('view_job', job_id=job.id) }}">{{ job.name }}</a>
+                        </td>
+                        <td>{{ job.model_type }}</td>
+                        <td>
+                            {% if job.dataset %}
+                            <a href="{{ url_for('view_dataset', dataset_id=job.dataset.id) }}">{{ job.dataset.name }}</a>
+                            {% else %}
+                            <span class="text-muted">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ job.status }}" 
+                                  data-job-id="{{ job.id }}" 
+                                  data-job-status="{{ job.status }}">
+                                {{ job.status }}
+                            </span>
+                        </td>
+                        <td>{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('view_job', job_id=job.id) }}" class="btn btn-outline-primary">
+                                    <i data-feather="eye" class="me-1"></i> View
+                                </a>
+                                {% if job.status == 'completed' %}
+                                <a href="{{ url_for('view_results', job_id=job.id) }}" class="btn btn-outline-success">
+                                    <i data-feather="bar-chart-2" class="me-1"></i> Results
+                                </a>
+                                {% elif job.status == 'running' %}
+                                <button onclick="cancelJob({{ job.id }})" class="btn btn-outline-danger">
+                                    <i data-feather="x-circle" class="me-1"></i> Cancel
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-3">
+                <i data-feather="clipboard" style="width: 48px; height: 48px;" class="text-muted"></i>
+            </div>
+            <h5>No Training Jobs Yet</h5>
+            <p class="text-muted">Upload a dataset and start a new training job to get started.</p>
+            <a href="{{ url_for('upload_dataset') }}" class="btn btn-primary mt-2">
+                <i data-feather="upload" class="me-1"></i> Upload Dataset
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

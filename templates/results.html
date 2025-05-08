@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Training Results - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Training Results{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Job Information</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3">{{ job.name }}</h6>
+                
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Model:</strong> {{ job.model_type }}</p>
+                    <p class="mb-1"><strong>Status:</strong> 
+                        <span class="badge badge-{{ job.status }}">{{ job.status }}</span>
+                    </p>
+                    <p class="mb-1"><strong>Dataset:</strong> 
+                        <a href="{{ url_for('view_dataset', dataset_id=job.dataset.id) }}">{{ job.dataset.name }}</a>
+                    </p>
+                    <p class="mb-1"><strong>Started:</strong> 
+                        {{ job.started_at.strftime('%Y-%m-%d %H:%M:%S') if job.started_at else 'Not started' }}
+                    </p>
+                    <p class="mb-1"><strong>Completed:</strong> 
+                        {{ job.completed_at.strftime('%Y-%m-%d %H:%M:%S') if job.completed_at else 'Not completed' }}
+                    </p>
+                    {% if job.started_at and job.completed_at %}
+                    <p class="mb-1"><strong>Duration:</strong> 
+                        {{ (job.completed_at - job.started_at)|string }}
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Training Parameters:</h6>
+                    <ul class="list-group list-group-flush small">
+                        {% for key, value in job.parameters.items() %}
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>{{ key }}</span>
+                            <span class="text-muted">{{ value }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Integration Links:</h6>
+                    {% if job.mlflow_experiment_id and job.mlflow_run_id %}
+                    <a href="{{ url_for('mlflow_dashboard') }}" class="btn btn-sm btn-outline-primary mb-2" target="_blank">
+                        <i data-feather="external-link" class="me-1"></i> View in MLFlow
+                    </a>
+                    {% endif %}
+                    
+                    {% if job.dagster_run_id %}
+                    <a href="{{ url_for('dagster_dashboard') }}" class="btn btn-sm btn-outline-primary mb-2" target="_blank">
+                        <i data-feather="external-link" class="me-1"></i> View in Dagster
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8" id="results-container">
+        {% if models %}
+        {% set model = models[0] %}
+        
+        <div id="model-metrics" data-metrics="{{ model.metrics|tojson }}"></div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Model Performance Metrics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    {% if model.metrics.mAP is defined %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="metrics-card text-center p-3 border rounded">
+                            <div class="metric-label">mAP</div>
+                            <div class="metric-value">{{ "%.3f"|format(model.metrics.mAP) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if model.metrics.mAP50 is defined %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="metrics-card text-center p-3 border rounded">
+                            <div class="metric-label">mAP@50</div>
+                            <div class="metric-value">{{ "%.3f"|format(model.metrics.mAP50) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if model.metrics.precision is defined %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="metrics-card text-center p-3 border rounded">
+                            <div class="metric-label">Precision</div>
+                            <div class="metric-value">{{ "%.3f"|format(model.metrics.precision) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if model.metrics.recall is defined %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="metrics-card text-center p-3 border rounded">
+                            <div class="metric-label">Recall</div>
+                            <div class="metric-value">{{ "%.3f"|format(model.metrics.recall) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="chart-container mb-4">
+                    <canvas id="performance-radar"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Training Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="training-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Per-Class Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Confusion Matrix</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="confusion-matrix"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-3">
+                    <i data-feather="bar-chart-2" style="width: 48px; height: 48px;" class="text-muted"></i>
+                </div>
+                <h5>No Results Available</h5>
+                <p class="text-muted">This job has not completed or did not produce any results.</p>
+                <a href="{{ url_for('view_job', job_id=job.id) }}" class="btn btn-primary mt-2">
+                    <i data-feather="arrow-left" class="me-1"></i> Back to Job Details
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

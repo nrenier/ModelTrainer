@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Dagster Dashboard - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Dagster Workflow Orchestration{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Dagster Pipeline Orchestration</h5>
+                    <a href="{{ dagster_url }}" target="_blank" class="btn btn-sm btn-primary">
+                        <i data-feather="external-link" class="me-1"></i> Open in New Tab
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">
+                    Dagster is used to orchestrate the model training pipelines, providing workflow management and visualization.
+                    The embedded view below allows you to explore your pipeline runs and their execution status.
+                </p>
+                
+                <div class="alert alert-info d-flex">
+                    <div class="me-3">
+                        <i data-feather="info" style="width: 24px; height: 24px;"></i>
+                    </div>
+                    <div>
+                        <h6 class="alert-heading mb-1">Dagster Features</h6>
+                        <ul class="mb-0">
+                            <li>View pipeline execution status</li>
+                            <li>Monitor current and historical runs</li>
+                            <li>Inspect pipeline steps and dependencies</li>
+                            <li>View logs and execution details</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="integration-container">
+                    {% if dagster_url %}
+                    <iframe src="{{ dagster_url }}" title="Dagster Dashboard" allowfullscreen></iframe>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i data-feather="alert-circle" style="width: 48px; height: 48px;" class="text-muted"></i>
+                        </div>
+                        <h5>Dagster Connection Not Configured</h5>
+                        <p class="text-muted">The Dagster API URL is not properly configured.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

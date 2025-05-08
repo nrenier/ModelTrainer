@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Overview Statistics -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 dashboard-card">
+            <div class="card-body text-center">
+                <div class="card-icon text-primary">
+                    <i data-feather="database"></i>
+                </div>
+                <h5 class="card-title">Datasets</h5>
+                <p class="stat-counter">{{ datasets_count }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 dashboard-card">
+            <div class="card-body text-center">
+                <div class="card-icon text-success">
+                    <i data-feather="activity"></i>
+                </div>
+                <h5 class="card-title">Training Jobs</h5>
+                <p class="stat-counter">{{ jobs_count }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 dashboard-card">
+            <div class="card-body text-center">
+                <div class="card-icon text-info">
+                    <i data-feather="play-circle"></i>
+                </div>
+                <h5 class="card-title">Running Jobs</h5>
+                <p class="stat-counter">{{ running_jobs }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 dashboard-card">
+            <div class="card-body text-center">
+                <div class="card-icon text-warning">
+                    <i data-feather="check-circle"></i>
+                </div>
+                <h5 class="card-title">Completed Jobs</h5>
+                <p class="stat-counter">{{ completed_jobs }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('upload_dataset') }}" class="btn btn-primary w-100">
+                            <i data-feather="upload" class="me-2"></i> Upload New Dataset
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('list_datasets') }}" class="btn btn-outline-primary w-100">
+                            <i data-feather="list" class="me-2"></i> View All Datasets
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('list_jobs') }}" class="btn btn-outline-primary w-100">
+                            <i data-feather="activity" class="me-2"></i> View Training Jobs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Application Overview -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">About This Application</h5>
+            </div>
+            <div class="card-body">
+                <p>This application provides an automated pipeline for fine-tuning and retraining of object detection models, focusing on YOLO and RF-DETR architectures.</p>
+                
+                <h6 class="mt-3">Supported Features:</h6>
+                <ul>
+                    <li>Upload and manage custom datasets</li>
+                    <li>Configure model training parameters</li>
+                    <li>Fine-tune YOLO and RF-DETR models</li>
+                    <li>Track experiments with MLFlow</li>
+                    <li>Orchestrate workflows with Dagster</li>
+                    <li>Visualize training metrics and results</li>
+                </ul>
+                
+                <h6 class="mt-3">Supported Models:</h6>
+                <div>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv5s</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv5m</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv5l</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv5x</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv8n</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv8s</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv8m</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv8l</span>
+                    <span class="badge bg-primary me-2 mb-2">YOLOv8x</span>
+                    <span class="badge bg-success me-2 mb-2">RF-DETR-R50</span>
+                    <span class="badge bg-success me-2 mb-2">RF-DETR-R101</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Getting Started</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="mb-3">1. Upload Your Dataset</h6>
+                    <p>Start by uploading your custom dataset in one of the supported formats (COCO, YOLO, Pascal VOC).</p>
+                    <a href="{{ url_for('upload_dataset') }}" class="btn btn-sm btn-outline-primary">
+                        <i data-feather="upload" class="me-1"></i> Upload Dataset
+                    </a>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="mb-3">2. Configure Training</h6>
+                    <p>Choose a model architecture and configure training parameters based on your needs.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="mb-3">3. Monitor Training</h6>
+                    <p>Track the progress of your training jobs and view detailed metrics.</p>
+                </div>
+                
+                <div>
+                    <h6 class="mb-3">4. Evaluate Results</h6>
+                    <p>Review model performance and download trained models for inference.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

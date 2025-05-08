@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}MLFlow Dashboard - ML Training Pipeline{% endblock %}
+
+{% block page_title %}MLFlow Integration{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">MLFlow Experiment Tracking</h5>
+                    <a href="{{ mlflow_url }}" target="_blank" class="btn btn-sm btn-primary">
+                        <i data-feather="external-link" class="me-1"></i> Open in New Tab
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">
+                    MLFlow is used to track experiments, metrics, parameters, and artifacts for model training jobs.
+                    The embedded view below allows you to explore your experiments and runs.
+                </p>
+                
+                <div class="alert alert-info d-flex">
+                    <div class="me-3">
+                        <i data-feather="info" style="width: 24px; height: 24px;"></i>
+                    </div>
+                    <div>
+                        <h6 class="alert-heading mb-1">MLFlow Features</h6>
+                        <ul class="mb-0">
+                            <li>Track and compare metrics across runs</li>
+                            <li>View parameter configurations</li>
+                            <li>Analyze model performance</li>
+                            <li>Access stored model artifacts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="integration-container">
+                    {% if mlflow_url %}
+                    <iframe src="{{ mlflow_url }}" title="MLFlow Dashboard" allowfullscreen></iframe>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i data-feather="alert-circle" style="width: 48px; height: 48px;" class="text-muted"></i>
+                        </div>
+                        <h5>MLFlow Connection Not Configured</h5>
+                        <p class="text-muted">The MLFlow tracking server URL is not properly configured.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

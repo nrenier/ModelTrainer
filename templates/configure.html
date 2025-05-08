@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Configure Training - ML Training Pipeline{% endblock %}
+
+{% block page_title %}Configure Training{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Dataset Information</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3 text-muted">{{ dataset.name }}</h6>
+                
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Format:</strong> <span class="badge bg-primary">{{ dataset.format }}</span></p>
+                    <p class="mb-1"><strong>Classes:</strong> {{ dataset.num_classes }}</p>
+                    <p class="mb-1"><strong>Images:</strong> {{ dataset.num_images }}</p>
+                    <p class="mb-1"><strong>Created:</strong> {{ dataset.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                
+                {% if dataset.description %}
+                <div class="mb-3">
+                    <h6>Description:</h6>
+                    <p class="text-muted">{{ dataset.description }}</p>
+                </div>
+                {% endif %}
+                
+                {% if dataset.class_names %}
+                <div>
+                    <h6>Classes:</h6>
+                    <div>
+                        {% for class_name in dataset.class_names %}
+                        <span class="class-label">{{ class_name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Training Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="training-config-form" action="{{ url_for('configure_training', dataset_id=dataset.id) }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="job_name" class="form-label">Job Name</label>
+                            <input type="text" class="form-control" id="job_name" name="job_name" required 
+                                   placeholder="Enter a name for this training job">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <input type="text" class="form-control" id="description" name="description" 
+                                   placeholder="Brief description of this training run">
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4">Model Selection</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="model_type" class="form-label">Model Type</label>
+                            <select class="form-select" id="model_type" name="model_type" required>
+                                <option value="" selected disabled>Select model type...</option>
+                                <option value="yolo">YOLO</option>
+                                <option value="rf-detr">RF-DETR</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="model_variant" class="form-label">Model Variant</label>
+                            <select class="form-select" id="model_variant" name="model_variant" required>
+                                <option value="" selected disabled>Select model variant...</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4">Training Parameters</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="epochs" class="form-label">Epochs</label>
+                            <input type="number" class="form-control" id="epochs" name="epochs" 
+                                   value="{{ default_epochs }}" min="1" max="1000" required
+                                   data-validation-type="positive-integer">
+                            <div class="form-text">Number of training epochs</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="batch_size" class="form-label">Batch Size</label>
+                            <input type="number" class="form-control" id="batch_size" name="batch_size" 
+                                   value="{{ default_batch_size }}" min="1" max="128" required
+                                   data-validation-type="positive-integer">
+                            <div class="form-text">Batch size for training</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="learning_rate" class="form-label">Learning Rate</label>
+                            <input type="number" class="form-control" id="learning_rate" name="learning_rate" 
+                                   value="{{ default_learning_rate }}" min="0.00001" max="1" step="0.0001" required
+                                   data-validation-type="positive-number">
+                            <div class="form-text">Initial learning rate</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="augmentation" class="form-label">Data Augmentation</label>
+                            <select class="form-select" id="augmentation" name="augmentation">
+                                <option value="default" selected>Default (Recommended)</option>
+                                <option value="minimal">Minimal</option>
+                                <option value="aggressive">Aggressive</option>
+                                <option value="none">None</option>
+                            </select>
+                            <div class="form-text">Level of data augmentation during training</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="validation_split" class="form-label">Validation Split</label>
+                            <input type="number" class="form-control" id="validation_split" name="validation_split" 
+                                   value="0.2" min="0.1" max="0.5" step="0.05" required
+                                   data-validation-type="range" data-validation-min="0.1" data-validation-max="0.5">
+                            <div class="form-text">Fraction of data to use for validation</div>
+                        </div>
+                    </div>
+                    
+                    <div id="transfer_learning_section" class="mb-4">
+                        <h6 class="mb-3 mt-4">Transfer Learning</h6>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="transfer_learning" name="transfer_learning" checked>
+                            <label class="form-check-label" for="transfer_learning">
+                                Use transfer learning with pretrained weights
+                            </label>
+                            <div class="form-text">Recommended for faster convergence and better performance</div>
+                        </div>
+                        
+                        <div id="pretrained_weights_section">
+                            <label for="pretrained_weights" class="form-label">Pretrained Weights</label>
+                            <select class="form-select" id="pretrained_weights" name="pretrained_weights">
+                                <option value="coco" selected>COCO</option>
+                                <option value="imagenet">ImageNet</option>
+                                <!-- Other options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i data-feather="info" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <div>
+                                <h6 class="alert-heading mb-1">Training Information</h6>
+                                <p class="mb-0">
+                                    This will start a training job that will be executed in the background. 
+                                    You can monitor the progress in the Jobs section. Depending on the dataset size 
+                                    and training parameters, this may take several hours to complete.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('list_datasets') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="play" class="me-1"></i> Start Training
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
