@@ -32,10 +32,13 @@ def upload_dataset():
     
     if request.method == 'POST':
         logger.info("Processing POST request for dataset upload")
+        logger.info("Form data: %s", request.form)
+        logger.info("Files: %s", request.files)
+        
         # Check if the post request has the file part
         if 'dataset_file' not in request.files:
             logger.error("No file part in request")
-            flash('No file part', 'error')
+            flash('No file part in the request. Please select a file to upload.', 'error')
             return redirect(request.url)
             
         file = request.files['dataset_file']
@@ -44,22 +47,38 @@ def upload_dataset():
         # If user does not select file, browser may submit an empty file
         if file.filename == '':
             logger.error("Empty filename submitted")
-            flash('No selected file', 'error')
+            flash('No selected file. Please select a valid file to upload.', 'error')
             return redirect(request.url)
             
-        if file:
-            dataset_name = request.form.get('dataset_name', 'Unnamed Dataset')
-            dataset_format = request.form.get('dataset_format')
-            description = request.form.get('description', '')
+        # Check if required form fields are present
+        dataset_name = request.form.get('dataset_name')
+        dataset_format = request.form.get('dataset_format')
+        
+        if not dataset_name:
+            logger.error("Missing dataset name")
+            flash('Please provide a name for the dataset.', 'error')
+            return redirect(request.url)
             
-            logger.info("Processing dataset: %s, format: %s", dataset_name, dataset_format)
+        if not dataset_format:
+            logger.error("Missing dataset format")
+            flash('Please select a dataset format.', 'error')
+            return redirect(request.url)
             
-            # Create a secure filename and save the file
+        # Process the file if all validations pass
+        description = request.form.get('description', '')
+        logger.info("Processing dataset: %s, format: %s", dataset_name, dataset_format)
+        
+        # Create a secure filename
+        if file.filename:  # Double check to avoid TypeError with None
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             logger.info("Saving file to: %s", file_path)
             
             try:
+                # Make sure the upload directory exists
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                
+                # Save the file
                 file.save(file_path)
                 logger.info("File saved successfully")
                 
@@ -69,17 +88,16 @@ def upload_dataset():
                 logger.info("Dataset processed successfully: %s", dataset_info)
                 
                 # Create a new dataset record
-                new_dataset = Dataset(
-                    name=dataset_name,
-                    description=description,
-                    format=dataset_format,
-                    path=file_path,
-                    created_at=datetime.utcnow(),
-                    size=os.path.getsize(file_path),
-                    num_classes=dataset_info.get('num_classes', 0),
-                    num_images=dataset_info.get('num_images', 0),
-                    class_names=dataset_info.get('class_names', [])
-                )
+                new_dataset = Dataset()
+                new_dataset.name = dataset_name
+                new_dataset.description = description
+                new_dataset.format = dataset_format
+                new_dataset.path = file_path
+                new_dataset.created_at = datetime.utcnow()
+                new_dataset.size = os.path.getsize(file_path)
+                new_dataset.num_classes = dataset_info.get('num_classes', 0)
+                new_dataset.num_images = dataset_info.get('num_images', 0)
+                new_dataset.class_names = dataset_info.get('class_names', [])
                 
                 logger.info("Adding dataset to database")
                 db.session.add(new_dataset)
@@ -95,6 +113,9 @@ def upload_dataset():
                 logger.error(f"Error details: {str(e)}")
                 flash(f'Error processing dataset: {str(e)}', 'error')
                 return redirect(request.url)
+        else:
+            flash('Invalid file selected.', 'error')
+            return redirect(request.url)
     
     # GET request - show the upload form
     logger.info("Showing upload form")
@@ -125,16 +146,38 @@ def configure_training(dataset_id):
         model_variant = request.form.get('model_variant')
         
         # Collect training parameters
+        epochs_default = app.config.get('DEFAULT_EPOCHS', 100)
+        batch_size_default = app.config.get('DEFAULT_BATCH_SIZE', 16)
+        learning_rate_default = app.config.get('DEFAULT_LEARNING_RATE', 0.001)
+        
+        # Safely convert parameters to the correct types
+        try:
+            epochs = request.form.get('epochs')
+            epochs = int(epochs) if epochs else epochs_default
+            
+            batch_size = request.form.get('batch_size')
+            batch_size = int(batch_size) if batch_size else batch_size_default
+            
+            learning_rate = request.form.get('learning_rate')
+            learning_rate = float(learning_rate) if learning_rate else learning_rate_default
+            
+            validation_split = request.form.get('validation_split')
+            validation_split = float(validation_split) if validation_split else 0.2
+        except (ValueError, TypeError) as e:
+            logger.error(f"Error converting parameters: {str(e)}")
+            flash(f'Invalid parameter values: {str(e)}', 'error')
+            return redirect(request.url)
+            
         parameters = {
             'model_type': model_type,
             'model_variant': model_variant,
-            'epochs': int(request.form.get('epochs', app.config.get('DEFAULT_EPOCHS'))),
-            'batch_size': int(request.form.get('batch_size', app.config.get('DEFAULT_BATCH_SIZE'))),
-            'learning_rate': float(request.form.get('learning_rate', app.config.get('DEFAULT_LEARNING_RATE'))),
+            'epochs': epochs,
+            'batch_size': batch_size,
+            'learning_rate': learning_rate,
             'augmentation': request.form.get('augmentation', 'default'),
             'transfer_learning': 'transfer_learning' in request.form,
             'pretrained_weights': request.form.get('pretrained_weights', 'coco'),
-            'validation_split': float(request.form.get('validation_split', 0.2)),
+            'validation_split': validation_split,
         }
         
         # Validate the configuration
@@ -148,17 +191,16 @@ def configure_training(dataset_id):
             mlflow_exp_id, mlflow_run_id = create_mlflow_experiment(job_name, parameters)
             
             # Create a new training job
-            new_job = TrainingJob(
-                name=job_name,
-                description=description,
-                model_type=f"{model_type}_{model_variant}",
-                status='pending',
-                created_at=datetime.utcnow(),
-                parameters=parameters,
-                dataset_id=dataset.id,
-                mlflow_experiment_id=mlflow_exp_id,
-                mlflow_run_id=mlflow_run_id
-            )
+            new_job = TrainingJob()
+            new_job.name = job_name
+            new_job.description = description
+            new_job.model_type = f"{model_type}_{model_variant}"
+            new_job.status = 'pending'
+            new_job.created_at = datetime.utcnow()
+            new_job.parameters = parameters
+            new_job.dataset_id = dataset.id
+            new_job.mlflow_experiment_id = mlflow_exp_id
+            new_job.mlflow_run_id = mlflow_run_id
             
             db.session.add(new_job)
             db.session.commit()

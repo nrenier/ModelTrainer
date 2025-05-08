@@ -92,6 +92,8 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('Upload page script loaded');
+        const uploadForm = document.getElementById('dataset-upload-form');
         const uploadArea = document.getElementById('upload-area');
         const fileInput = document.getElementById('dataset_file');
         const browseButton = document.getElementById('browse-button');
@@ -99,18 +101,45 @@
         const selectedFilename = document.getElementById('selected-filename');
         const removeFileButton = document.getElementById('remove-file');
         
+        // Add form submission handler
+        if (uploadForm) {
+            console.log('Form found, adding submission handler');
+            uploadForm.addEventListener('submit', function(e) {
+                console.log('Form submit initiated');
+                // Check if all required fields are filled
+                const dataset_name = document.getElementById('dataset_name').value;
+                const dataset_format = document.getElementById('dataset_format').value;
+                
+                if (!dataset_name || !dataset_format || !fileInput.files.length) {
+                    e.preventDefault();
+                    console.error('Missing required fields in form submission');
+                    alert('Please fill in all required fields and select a file.');
+                    return false;
+                }
+                
+                console.log('Form validated, submitting');
+                return true;
+            });
+        } else {
+            console.error('Upload form not found!');
+        }
+        
         // Handle browse button click
         browseButton.addEventListener('click', function() {
+            console.log('Browse button clicked');
             fileInput.click();
         });
         
         // Handle file selection
         fileInput.addEventListener('change', function() {
+            console.log('File input changed');
             if (fileInput.files.length > 0) {
+                console.log('File selected:', fileInput.files[0].name);
                 selectedFilename.textContent = fileInput.files[0].name;
                 fileSelected.classList.remove('d-none');
                 uploadArea.classList.add('border-success');
             } else {
+                console.log('No file selected');
                 fileSelected.classList.add('d-none');
                 uploadArea.classList.remove('border-success');
             }
@@ -118,6 +147,7 @@
         
         // Handle remove file button
         removeFileButton.addEventListener('click', function() {
+            console.log('Remove file button clicked');
             fileInput.value = '';
             fileSelected.classList.add('d-none');
             uploadArea.classList.remove('border-success');
@@ -134,10 +164,12 @@
         });
         
         uploadArea.addEventListener('drop', function(e) {
+            console.log('File dropped');
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             
             if (e.dataTransfer.files.length > 0) {
+                console.log('File dropped:', e.dataTransfer.files[0].name);
                 fileInput.files = e.dataTransfer.files;
                 selectedFilename.textContent = fileInput.files[0].name;
                 fileSelected.classList.remove('d-none');
@@ -147,6 +179,7 @@
         
         // Handle clicks on the upload area
         uploadArea.addEventListener('click', function() {
+            console.log('Upload area clicked');
             fileInput.click();
         });
     });
