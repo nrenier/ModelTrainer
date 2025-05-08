@@ -34,7 +34,8 @@ db.init_app(app)
 
 # Configure file uploads
 app.config["UPLOAD_FOLDER"] = Config.UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = Config.MAX_CONTENT_LENGTH
+# Increase the maximum allowed file size to 1GB
+app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GB max upload size
 app.config["SUPPORTED_FORMATS"] = Config.SUPPORTED_FORMATS
 app.config["SUPPORTED_MODELS"] = Config.SUPPORTED_MODELS
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
