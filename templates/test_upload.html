@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        h1 {
+            color: #0d6efd;
+        }
+        form {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0b5ed7;
+        }
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background-color: #1a472a;
+            color: #c0ffb3;
+        }
+        .alert-error {
+            background-color: #4a1a1a;
+            color: #ffb3b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test File Upload</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form action="{{ url_for('test_upload') }}" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="name">Nome Dataset</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="format">Formato Dataset</label>
+            <select id="format" name="format" required>
+                <option value="" selected disabled>Seleziona formato...</option>
+                <option value="COCO">COCO</option>
+                <option value="YOLO">YOLO</option>
+                <option value="Pascal VOC">Pascal VOC</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="file">File Dataset</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        
+        <button type="submit">Carica Dataset</button>
+    </form>
+    
+    <a href="/">Torna alla Home</a>
+</body>
+</html>

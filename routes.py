@@ -284,4 +284,51 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
+    logger.exception("Server error occurred")
     return render_template('500.html'), 500
+    
+@app.route('/test_upload', methods=['GET', 'POST'])
+def test_upload():
+    """Test page for simple file upload."""
+    if request.method == 'POST':
+        logger.info("Test upload POST received")
+        logger.info("Form data: %s", request.form)
+        logger.info("Files: %s", list(request.files.keys()))
+        
+        try:
+            # Check for file part
+            if 'file' not in request.files:
+                logger.error("No file part in test upload")
+                flash('No file part', 'error')
+                return redirect(request.url)
+                
+            file = request.files['file']
+            if file.filename == '':
+                logger.error("No selected file in test upload")
+                flash('No selected file', 'error')
+                return redirect(request.url)
+                
+            # Get form data
+            name = request.form.get('name', 'Test Dataset')
+            format = request.form.get('format', 'COCO')
+            
+            logger.info("Test upload received: %s, %s, %s", name, format, file.filename)
+            
+            # Save the file
+            os.makedirs('uploads', exist_ok=True)
+            filename = secure_filename(file.filename) if file.filename else 'unnamed_file'
+            file_path = os.path.join('uploads', filename)
+            file.save(file_path)
+            logger.info("Test file saved at: %s", file_path)
+            
+            # Success
+            flash(f'File {filename} uploaded successfully!', 'success')
+            return redirect(url_for('test_upload'))
+            
+        except Exception as e:
+            logger.exception("Error in test upload")
+            flash(f'Upload error: {str(e)}', 'error')
+            return redirect(request.url)
+    
+    # GET request
+    return render_template('test_upload.html')
