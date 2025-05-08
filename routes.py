@@ -28,16 +28,22 @@ def index():
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_dataset():
     """Page for uploading new datasets."""
+    logger.info("Upload dataset route accessed with method: %s", request.method)
+    
     if request.method == 'POST':
+        logger.info("Processing POST request for dataset upload")
         # Check if the post request has the file part
         if 'dataset_file' not in request.files:
+            logger.error("No file part in request")
             flash('No file part', 'error')
             return redirect(request.url)
             
         file = request.files['dataset_file']
+        logger.info("File received: %s", file.filename)
         
         # If user does not select file, browser may submit an empty file
         if file.filename == '':
+            logger.error("Empty filename submitted")
             flash('No selected file', 'error')
             return redirect(request.url)
             
@@ -46,14 +52,21 @@ def upload_dataset():
             dataset_format = request.form.get('dataset_format')
             description = request.form.get('description', '')
             
+            logger.info("Processing dataset: %s, format: %s", dataset_name, dataset_format)
+            
             # Create a secure filename and save the file
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            logger.info("Saving file to: %s", file_path)
             
             try:
+                file.save(file_path)
+                logger.info("File saved successfully")
+                
                 # Process the dataset (extract, validate, etc.)
+                logger.info("Starting dataset processing")
                 dataset_info = process_dataset(file_path, dataset_format)
+                logger.info("Dataset processed successfully: %s", dataset_info)
                 
                 # Create a new dataset record
                 new_dataset = Dataset(
@@ -68,18 +81,23 @@ def upload_dataset():
                     class_names=dataset_info.get('class_names', [])
                 )
                 
+                logger.info("Adding dataset to database")
                 db.session.add(new_dataset)
                 db.session.commit()
+                logger.info("Dataset saved to database with ID: %s", new_dataset.id)
                 
                 flash(f'Dataset "{dataset_name}" uploaded successfully!', 'success')
+                logger.info("Redirecting to configure_training")
                 return redirect(url_for('configure_training', dataset_id=new_dataset.id))
                 
             except Exception as e:
-                logger.error(f"Error processing dataset: {str(e)}")
+                logger.exception("Error processing dataset")
+                logger.error(f"Error details: {str(e)}")
                 flash(f'Error processing dataset: {str(e)}', 'error')
                 return redirect(request.url)
     
     # GET request - show the upload form
+    logger.info("Showing upload form")
     supported_formats = app.config.get('SUPPORTED_FORMATS', ['COCO', 'YOLO', 'Pascal VOC'])
     return render_template('upload.html', supported_formats=supported_formats)
 
